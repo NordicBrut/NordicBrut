@@ -1,0 +1,61 @@
+# opens file, manipulate into accessible list
+with open('doc.txt', 'r') as f:
+    # closes file once changes are made
+    file = f.readlines()
+    file = [i.strip() for i in file]
+    file = [i.split() for i in file]
+    file = [str(i).lower() for i in file]
+    for i in file:
+        print(i)
+
+scriptOpen = '<html>'  #'<script'  # desired opentag keyword
+scriptClose = '</html>'  #</script>'  # desired closingtag keyword
+scriptList = []
+
+
+# Cheking if the file item contains the desired tag/string
+def is_in_file(Tag=str) -> bool:
+    if Tag in file[i]:
+        return True
+    return False
+
+
+# Takes the indicies of tags in the list and uses them to define a delete from here to here.
+def remove_chunk_from(starti: int, endi: int) -> None:
+    pointer = 0
+    for i in range(starti, endi + 1):
+        del file[i - pointer]
+        pointer += 1
+# keeps the nodes the same instead of deleting the wrong value after the first iteration
+    return
+
+
+for i in range(len(file)):
+    if is_in_file(scriptOpen):
+# If true the item where the key word is found gets added to the lsit
+        scriptList.append(i)
+    if is_in_file(scriptClose):
+        scriptList.append(i)
+# These are to be seen as pairs ie [(6,7) (10,12)]
+
+
+scriptList = scriptList[::-1]
+# script is appended to chronologically but the way to remove the desired text is from last to first so the list is reversed
+
+
+jump = 0
+# searching through list [12, 10, 7, 6]
+# for loop picks out pairs
+for i in range(len(scriptList) - 1):
+    if i + jump > (len(scriptList) - 2): break # FIX ME - fails when searching len(scriptList).
+    else:
+        remove_chunk_from(scriptList[i + jump + 1], scriptList[i + jump])
+# as the func takes the start then end tags, the values here must be that the 1st value is the end and the start is the 2nd value
+        jump += 1
+
+
+print('\n')
+for i in file:
+    print(i)
+
+print('\n', is_in_file.__annotations__, *remove_chunk_from.__annotations__)
