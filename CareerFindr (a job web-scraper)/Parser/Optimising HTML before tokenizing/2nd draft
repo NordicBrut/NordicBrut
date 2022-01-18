@@ -1,0 +1,71 @@
+import platform
+print(platform.python_version().upper(), '\n')
+
+# Opens file, manipulate into accessible list
+with open('doc.txt', 'r') as f:
+# Closes file once changes are made to avoid errors
+    file = f.readlines()
+    file = [i.strip() for i in file]
+    file = [i.split() for i in file]
+    file = [str(i).lower() for i in file]
+
+for i in file:
+  print(i)    
+
+scriptOpen = '<script' # Desired opentag keyword
+scriptClose = '</script>' # Desired closingtag keyword
+scriptList = []
+
+
+# Cheking if the file item contains the desired tag/string
+def is_in_file(Tag=str) -> bool:
+    if Tag in file[i]:
+        return True
+    return False
+
+
+def is_odd(integer:int) -> bool:
+    if integer % 2 != 0:
+        return True
+    return False
+
+# Takes the indicies of tags in the list and uses them to define a delete from here to here.
+def remove_chunk_from(starti: int, endi: int) -> None:
+    pointer = 0
+    for i in range(starti, endi + 1):
+        del file[i - pointer]
+        pointer += 1
+# Keeps the nodes the same instead of deleting the wrong value after the first iteration
+    return
+
+
+for i in range(len(file)):
+    if is_in_file(scriptOpen):
+        scriptList.append(i)
+# If true the item where the key word is found gets added to the list
+    if is_in_file(scriptClose):
+        scriptList.append(i)
+# These are to be seen as pairs ie ((6,7) (10,12))
+
+scriptList = scriptList[::-1]
+# Script is appended to chronologically but the way to remove the desired text is from last to first so the list is reversed
+
+
+# Ensures each search_range is valid to search through
+search_range = len(scriptList)
+if is_odd(search_range):
+  search_range -= 1
+
+# Searching through list [12, 10, 7, 6]
+for i in range(0, search_range, 2):
+    remove_chunk_from(scriptList[i+1], scriptList[i])
+# For every index in len(search_range) starting from 0 and incrementing by 2, the next pair of values will be available to use as parameters
+
+#FIXED the earlier problem for pairs as now we can extract and manipulate them quickly.
+
+
+print('\n')
+for i in file:
+    print(i)
+
+print('\n', is_in_file.__annotations__, *remove_chunk_from.__annotations__)
