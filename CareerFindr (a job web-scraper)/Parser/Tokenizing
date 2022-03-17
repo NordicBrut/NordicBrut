@@ -1,1 +1,1093 @@
 
+#States
+
+
+#codepoint/current_input_char
+
+# ASCII_ALPHA = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+# current_tag_token is what exactly
+
+from http.client import SWITCHING_PROTOCOLS
+from re import S
+from tarfile import RECORDSIZE
+
+
+global replacement_character
+replacement_character = '.'
+
+def consume_char(char):
+    return char
+
+def consume_next_input_char(input=str):#Fix me##
+    codepoint = input.split()
+    return codepoint
+
+def switch_to_state(state_c):
+    state_c()
+
+def reconsume(codepoint, state):
+    switch_to_state(state, codepoint)
+
+#certain states use a temporary buffer to track progress
+#the character_reference_state uses a return_state to return to the state it was invoked from.
+def temporary_buffer(value):
+    temporary_buffer = value
+
+def temporary_buffer_append(codepoint):
+    temp_buffer.append(codepoint)
+    return temp_buffer
+
+def emit_token(codepoint):
+    return codepoint
+
+def append_token(char, current_tag):
+    current_tag.append(char)
+    return current_tag
+
+def char_token_per_in_buffer(temporary_buffer):
+    for char in temporary_buffer[::-1]:
+        tokens_to_emit.append(char)
+        emit_token(tokens_to_emit)
+
+def start_new_attribute(where, name, value):##
+    where = where
+    name = name
+    value = value
+
+def append_current_attribute_name(name):
+    current_attribute_name.append(name)
+
+def append_current_attribute_value(char):
+    current_attribute_value.append(char)
+
+
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            emit_token(codepoint)
+##################################################################
+
+def create_doctype_token(name=None, public_id=None, system_id=None, force_quirks_flag=False):
+    name = name
+    public_id = public_id
+    system_id = system_id
+    force_quirks_flag = force_quirks_flag
+
+def create_start_tag_token(tag_name, self_closing_flag=False, attributes=[], a_name, a_value):
+    tag_name = tag_name
+    self_closing_flag = self_closing_flag
+    attributes.append(a_name, a_value)
+
+def create_end_tag_token(tag_name, self_closing_flag=False, attributes=[], a_name, a_value):
+    tag_name = tag_name
+    self_closing_flag = self_closing_flag
+    attributes.append(a_name, a_value)
+
+def create_comment_token(data):
+    return data
+
+def create_character_token(data):
+    return data
+
+
+##################################################################
+
+def data_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '&':
+                return_state = data_state
+                switch_to_state(character_reference)
+        case '<':
+                switch_to_state(tag_open)
+        case None:
+                emit_token(EOF)
+        case _:
+                emit_token(codepoint)
+
+def rcdata_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '&':
+                return_state = rcdata_state
+                switch_to_state(character_reference)
+        case '<':
+                switch_to_state(rcdata_less_than)
+        case None:
+                emit_token(ReplacementCharacter)###
+        case 'EOF':
+                emit_token(EOF)
+        case _:
+                emit_token(codepoint)
+
+
+def rawtext_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '<':
+            switch_to_state(rawtext_less_than)
+        case None:
+            emit_token(ReplacementCharacter)###
+        case 'EOF':
+                emit_token(EOF)
+        case _:
+                emit_token(codepoint)
+
+def script_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '<':
+            switch_to_state(script_data_less_than)
+        case None:
+            emit_token(ReplacementCharacter)###
+        case _:
+            emit_token(codepoint)
+
+def plaintext_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case None:
+            emit_token(ReplacementCharacter)###
+        case 'EOF':
+            emit_token(EOF)
+        case _:
+            emit_token(codepoint)
+
+def tag_open_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '!':
+            switch_to_state()
+        case '/':
+            switch_to_state()
+        case in ASCII_ALPHA:#####FIXME###
+            #create_token(start_tag)
+            #tag_name = ''          OR
+            create_start_tag_token('')
+            reconsume(codepoint, tag_name)
+        case '?':
+            create_comment_token('')
+            reconsume(codepoint, bogus_comment)
+        case 'EOF':
+            emit_token(Less-thanSign)
+            emit_token(EOF)
+        case _:
+            emit_token(Less-thanSign)
+            reconsume(codepoint, data)
+
+def end_tag_open_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case in ASCII_ALPHA:#####FIXME###
+            #create_token(start_tag)
+            #tag_name = ''          OR
+            create_start_tag_token('')
+            reconsume(codepoint, tag_name)
+        case '>':
+            switch_to_state(data)
+        case 'EOF':
+            emit_token(Less-thanSign)
+            emit_token(Solidus)
+            emit_token(EOF)
+        case _:
+            create_comment_token('')
+            reconsume(bogus_comment)
+
+def tag_name_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case ('\t'|'\a'|'\f'|' '):
+            switch_to_state(before_attribute_name)
+        case '/':
+            switch_to_state(self_closing_start_tag)
+        case '>':
+            switch_to_state(data)
+            emit_token(current_tag)
+        case ASCII.upper():#
+            current_tag_token.append(codepoint.lower())#No clue     OR
+            append_token(codepoint.lower(), current_tag)
+        case None:
+            append_token(replacement_char, current_tag)
+        case 'EOF':
+            emit_token(EOF)
+        case _:
+            append_token(codepoint, current_tag)
+#####13.2.5.9
+def rcdata_less_than_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '/':
+            temporary_buffer = ''#
+            switch_to_state(rcdata_end_tag_open)
+        case _:
+            emit_token(Less-thanSign) #char token
+            reconsume(codepoint, rcdata)
+
+def rcdata_end_tag_open_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case 'ASCII':
+            create_end_tag_token('')
+            reconsume(codepoint, rcdata_end_tag_name)
+        case _:
+            emit_token(Less-thanSign)
+            emit_token(Solidus)
+            reconsume(codepoint, rcdata)
+
+def rcdata_end_tag_name_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case ('\t'|'\a'|'\f'|' ') and if appropriate_end_tag_token(current):###FIX ME###
+                switch_to_state(before_attribute_name)
+        case '/' and if appropriate_end_tag_token(current):##
+            switch_to_state(self_closing_start_tag)
+        case '>' and if appropriate_end_tag_token(current):
+            switch_to_state(data)
+            emit_token(current_tag)
+        case ASCII.upper():
+            append_token(codepoint.lower(), current_tag)
+            temporary_buffer_append(codepoint)
+        case ASCII.lower():
+            append_token(codepoint, current_tag)
+            temporary_buffer_append(codepoint)
+        case _:
+            emit_token(Less-thanSign)
+            emit_token(Solidus)
+            char_token_per_in_buffer(temp_buffer)
+            reconsume(codepoint, data)
+
+def rawtext_less_than_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '/':
+            temporary_buffer('')
+            switch_to_state(rawtext_end_tag_open)
+        case _:
+            emit_token(Less-thanSign)
+            reconsume(codepoint, rawtext)
+
+def rawtext_end_tag_open_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case 'ASCII':
+            create_end_tag_token('')
+            reconsume(codepoint, rawtext)
+        case _:
+            emit_token(Less-thanSign)
+            emit_token(Solidus)
+            reconsume(codepoint, rawtext)
+
+def rawtext_end_tag_name_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case ('\t'|'\a'|'\f'|' ') and if appropriate_end_tag_token(current):###FIX ME###
+            switch_to_state(before_attribute_name)
+        case '/' and if appropriate_end_tag_token(current):##
+            switch_to_state(self_closing_start_tag)
+        case '>' and if appropriate_end_tag_token(current):
+            switch_to_state(data)
+            emit_token(current_tag)
+        case ASCII.upper():
+            append_token(codepoint.lower(), current_tag)
+            temporary_buffer_append(codepoint)
+        case ASCII.lower():
+            append_token(codepoint, current_tag)
+            temporary_buffer_append(codepoint)
+        case _:
+            emit_token(Less-thanSign)
+            emit_token(Solidus)
+            char_token_per_in_buffer(temp_buffer)
+            reconsume(codepoint, data)
+#IGNORE ALL SCRIPTS???
+
+def before_attribute_name_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case ('\t'|'\a'|'\f'|' '):###FIX ME###
+            pass  #does this mean ignore char? or exit()
+        case ('/'|'>'|'EOF'):
+            reconsume(codepoint, after_attribute_name)
+        case '=':
+            start_new_attribute(CurrentTag, codepoint, '')##FIX ME###
+            switch_to_state(attribute_name)
+        case _:
+            start_new_attribute(CurrentTag, '', '')
+            reconsume(codepoint, attribute_name)
+
+def attribute_name_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case ('\t'|'\a'|'\f'|' '|'/'|'>'|'EOF'):
+            reconsume(codepoint, after_attribute_name)
+        case '=':
+            switch_to_state(before_attribute_name)
+        case 'ASCII.upper()':
+            append_current_attribute_name(codepoint.lower())
+        case None:
+            append_current_attribute_name('Replacement Character')
+        case ('"'|"'"|'<'):
+            append_current_attribute_name(codepoint)
+        case _:
+            append_current_attribute_name(codepoint)
+#when user leaves the attribute_name_state (and before emitting the tag token, if appropriate)
+#the complete attribute_name must be compared to the other attributes on that same token
+#if ==: remove_from_token(most recent attribute)
+
+def after_attribute_name_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case ('\t'|'\a'|'\f'|' '):###FIX ME###
+            pass  #
+        case '/':
+            switch_to_state(self_closing_start_tag)
+        case '=':
+            switch_to_state(data)
+            emit_token(current_tag)
+        case 'EOF':
+            emit_token(EOF)
+        case _:
+            start_new_attribute(current_tag, '', '')
+            reconsume(codepoint, attribute_name)
+
+def before_attribute_value_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case ('\t'|'\a'|'\f'|' '):###FIX ME###
+            pass  #
+        case '"':
+            switch_to_state(attribute_value_double_quoted)
+        case "'":
+            switch_to_state(attribute_value_single_quoted)
+        case '>':
+            switch_to_state(data)
+            emit_token(current_tag)
+        case _:
+            reconsume(codepoint, attribute_value_unquoted)
+
+def attribute_value_double_quoted_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '"':
+            switch_to_state(after_attribute_value_quoted)
+        case '&':
+            return_state = attribute_value_double_quoted_state##FIX ME##
+            switch_to_state(character_reference)
+        case None:
+            append_current_attribute_value(replacement_character)##FIX ME##
+        case 'EOF':
+            emit_token(EOF)
+        case _:
+            append_current_attribute_value(codepoint)
+
+def attribute_value_single_quoted_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case "'":
+            switch_to_state(after_attribute_value_quoted)
+        case '&':
+            return_state = attribute_value_single_quoted_state##FIX ME##
+            switch_to_state(character_reference)
+        case None:
+            append_current_attribute_value(replacement_character)
+        case 'EOF':
+            emit_token(EOF)
+        case _:
+            append_current_attribute_value(codepoint)
+
+def attribute_value_unqouted_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case ('\t'|'\a'|'\f'|' '):
+            switch_to_state(before_attribute_name)
+        case '&':
+            return_state = attribute_value_unquoted_state##FIX ME##
+            switch_to_state(character_reference)
+        case '>':
+            switch_to_state(data)
+        case None:
+            append_current_attribute_value(replacement_character)
+        case ('"'|"'"|'<'|'='|'`'):
+            append_current_attribute_value(codepoint)
+        case 'EOF':
+            emit_token(EOF)
+        case _:
+            append_current_attribute_value(codepoint)
+
+def after_attribute_value_quoted_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case ('\t'|'\a'|'\f'|' '):
+            switch_to_state(before_attribute_name)
+        case '/':
+            switch_to_state(self_closing_start_tag)
+        case '>':
+            switch_to_state(data)
+            emit_token(current_tag)
+        case 'EOF':
+            emit_token(EOF)
+        case _:
+            reconsume(codepoint, before_attribute_name)
+
+def self_closing_start_tag_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '>':
+            self_closing_flag_current_tag = True ##FIX ME#
+            switch_to_state(data)
+            emit_token(current_tag)
+        case 'EOF':
+            emit_token(EOF)
+        case _:
+            reconsume(codepoint, before_attribute_name)
+
+def bogus_comment_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '>':
+            switch_to_state(data)
+            emit_token(current_comment)
+        case 'EOF':
+            emit_token(EOF)
+        case None:
+            append_token(replacement_character, comment_token_data)#FIX ME##
+        case _:
+            append_token(codepoint, comment_token_data)
+
+##############13.2.5.42##########
+def markup_declaration_open_state(codepoint): #FIX ME##
+    next_few = check_next_few_characters() ##use stack
+    for char in next_few:
+        if next_few[char]+ next_few[(char+1)] == '--':
+            consume_char('--')
+            create_comment_token('')
+            switch_to_state(comment_start)
+        elif 'DOCTYPE' in next_few:
+            consume_char('DOCTYPE')
+            exit()
+        elif '[CDATA[' in next_few:
+            consume_char('[CDATA[')
+            if (adjusted_current_node() == True) and  adjusted_current_node() not in HTML_namespace:
+                switch_to_state(cdata_section)
+            else:
+                create_comment_token('[CDATA[')
+                switch_to_state(bogus_comment)
+        else:
+            create_comment_token('')
+            switch_to_state(bogus_comment) #'don't consume anything in the current state
+
+def check_next_few_characters() -> list:
+    next_few = []
+    for char in range(8):
+        next_few.append(consume_next_input_char())
+    next_few = next_few[::-1]
+    return next_few
+##############################
+def comment_start_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '-':
+            switch_to_state(comment_start_dash)
+        case '>':
+            switch_to_state(data)
+            emit_token(current_comment)####
+        case _:
+            reconsume(codepoint, comment)
+
+def comment_start_dash_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '-':
+            switch_to_state(comment_end)
+        case '>':
+            switch_to_state(data)
+            emit_token(current_comment)
+        case 'EOF':
+            emit_token(EOF)
+        case _:
+            append_token(data = '-') #FIX ME##
+            reconsume(codepoint, comment)
+
+def comment_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case ',':
+            append_token(data = codepoint)
+            switch_to_state(comment_less_than_sign)
+        case '-':
+            append_token(data = replacement_character)
+        case 'EOF':
+            emit_token(EOF)
+        case _:
+            append_token(data = codepoint)
+
+def commet_less_than_sign_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '!':
+            append_token(data = codepoint)
+            switch_to_state(comment_less_than_sign_bang)
+        case '<':
+            append_token(data = codepoint)
+        case _:
+            reconsume(codepoint, comment)
+
+def comment_less_than_sign_bang_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '-':
+            switch_to_state(comment_less_than_sign_bang_dash)
+        case _:
+            reconsume(codepoint, comment)
+
+def comment_less_than_sign_bang_dash_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '-':
+            switch_to_state(comment_less_than_sign_bang_dash_dash)
+        case _:
+            reconsume(codepoint, comment_end_dash)
+
+def comment_less_than_sign_bang_dash_dash_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case ('>'|'EOF'):
+            reconsume(codepoint, comment_end)
+        case _:
+            reconsume(codepoint, comment_end)
+
+def comment_end_dash_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '-':
+            switch_to_state(comment_end)
+        case 'EOF':
+            emit_token(EOF)
+        case _:
+            append_token(data = '-')
+            reconsume(codepoint, comment)
+
+def comment_end_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '>':
+            switch_to_state(data)
+            emit_token(current_comment)
+        case '!':
+            switch_to_state(comment_end_bang)
+        case '-':
+            append_token(data = '-')
+        case 'EOF':
+            emit_token(EOF)
+        case _:
+            append_token(data = '--') #OR append_token(data = '-'), append_token(data = '-')
+            reconsume(codepoint, comment)
+
+def comment_end_bang_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '-':
+            append_token(data = '--!') #OR -, -, !
+            switch_to_state(comment_end_dash)
+        case '>':
+            switch_to_state(data)
+            emit_token(current_comment)
+        case 'EOF':
+            emit_token(EOF)
+        case _:
+            append_token(data = '--!')
+            reconsume(codepoint, comment)
+
+def doctype_state(codepoint):###FIX ME##
+    consume_next_input_char()
+    match codepoint:
+        case ('\t'|'\a'|'\f'|' '):
+            switch_to_state(before_doctype_name)
+        case '>':
+            reconsume(codepoint, before_doctype_name)
+        case 'EOF':
+            create_doctype_token(force_quirks_flag = True)
+            emit_token(current)
+            emit_token(EOF)
+        case _:
+            reconsume(codepoint, before_doctype_name)
+
+def before_doctype_name_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case ('\t'|'\a'|'\f'|' '):
+            pass ##
+        case 'ASCII.upper()':
+            create_doctype_token(name = codepoint.lower())
+            switch_to_state(doctype_name)
+        case None:
+            create_doctype_token(name = replacement_character)
+            switch_to_state(doctype_name)
+        case '>':
+            create_doctype_token(force_quirks_flag = True)
+            switch_to_state(data)
+            emit_token(current)
+        case 'EOF':
+            create_doctype_token(force_quirks_flag = True)
+            emit_token(current)
+            emit_token(EOF)
+        case _:
+            create_doctype_token(name = codepoint)
+            switch_to_state(doctype_name)
+
+def doctype_name_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case ('\t'|'\a'|'\f'|' '):
+            switch_to_state(after_doctype_name)
+        case '>':
+            switch_to_state(data)
+            emit_token(current)
+        case 'ASCII.upper()':
+            append_token(codepoint.lower(), current_doctype_name)##FIX ME##
+        case None:
+            append_token(replacement_character, current_doctype_name)##
+        case 'EOF':
+            current_doctype_token(force_quirks_flag=True)##FIX ME###
+            emit_token(current_doctype)
+            emit_token(EOF)
+        case _:
+            append_token(codepoint, current_doctype_name)###
+
+def after_doctype_name_state(codepoint): #FIX ME##
+    consume_next_input_char()
+    match codepoint:
+        case ('\t'|'\a'|'\f'|' '):###FIX ME###
+            pass  
+        case '>':
+            switch_to_state(data)
+            emit_token(current_doctype)
+        case 'EOF':
+            current_doctype_token(force_quirks_flag=True)##
+            emit_token(current_doctype)
+            emit_token(EOF)
+        case _:
+            match = check_next_few_characters()
+            for chr in match:
+                pattern = match[chr]+match[chr+1]+match[chr+2]+match[chr+3]+match[chr+4]+match[chr+5]+match[chr+6] 
+                #^efficacy of the above is low
+                if pattern == 'PUBLIC':
+                    consume_char('PUBLIC')
+                    switch_to_state(after_doctype_public_keyword)
+                elif pattern == 'SYSTEM':
+                    consume_char('SYSTEM')
+                    switch_to_state(after_doctype_system_keyword)
+                else:
+                    current_doctype_token(force_quirks_flag=True)##
+                    reconsume(codepoint, bogus_doctype)
+
+def after_doctype_public_keyword_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case ('\t'|'\a'|'\f'|' '):###FIX ME###
+            switch_to_state(before_doctype_public_id_state)
+        case '"':
+            current_doctype_token(public_id = '')##
+            switch_to_state(doctype_public_id_double_quoted)
+        case "'":
+            current_doctype_token(public_id = '')##
+            switch_to_state(doctype_public_id_single_quoted)
+        case '>':
+            current_doctype_token(force_quirks_flag=True)##
+            switch_to_state(data)
+            emit_token(current_doctype)
+        case 'EOF':
+            current_doctype_token(force_quirks_flag=True)##
+            emit_token(current_doctype)
+            emit_token(EOF)
+        case _:
+            current_doctype_token(force_quirks_flag=True)##
+            reconsume(codepoint, bogus_doctype)
+
+def before_doctype_public_id_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case ('\t'|'\a'|'\f'|' '):##
+            pass
+        case '"':
+            current_doctype_token(public_id = '')##
+            switch_to_state(doctype_public_id_double_quoted)
+        case "'":
+            current_doctype_token(public_id = '')##
+            switch_to_state(doctype_public_id_single_quoted)
+        case '>':
+            current_doctype_token(force_quirks_flag=True)##
+            switch_to_state(data)
+            emit_token(current_doctype)
+        case 'EOF':
+            current_doctype_token(force_quirks_flag=True)##
+            emit_token(current_doctype)
+            emit_token(EOF)
+        case _:
+            current_doctype_token(force_quirks_flag=True)##
+            reconsume(codepoint, bogus_doctype)
+
+def doctype_public_id_double_quoted_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '"':
+            switch_to_state(after_doctype_public_id)
+        case None:
+            append_token(replacement_character, doctype_public_id)##
+        case '>':
+            current_doctype_token(force_quirks_flag=True)##
+            switch_to_state(data)
+            emit_token(current_doctype)
+        case 'EOF':
+            current_doctype_token(force_quirks_flag=True)##
+            emit_token(current_doctype)
+            emit_token(EOF)
+        case _:
+            append_token(codepoint, current_doctype_public_id)#
+
+def doctype_public_id_single_quoted_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case "'":
+            switch_to_state(after_doctype_public_id)
+        case None:
+            append_token(replacement_character, current_doctype_public_id)#
+        case '>':
+            current_doctype_token(force_quirks_flag=True)##
+            switch_to_state(data)
+            emit_token(current_doctype)
+        case 'EOF':
+            current_doctype_token(force_quirks_flag=True)##
+            emit_token(current_doctype)
+            emit_token(EOF)
+        case _:
+            append_token(codepoint, current_doctype_public_id)#
+
+def after_doctype_public_id_state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case ('\t'|'\a'|'\f'|' '):##
+            switch_to_state(between_doctype_public_system_ids)
+        case '>':
+            switch_to_state(data)
+            emit_token(current_doctype)
+        case '"':
+            current_doctype_token(system_id = '')##
+            switch_to_state(doctype_system_id_double_quoted)
+        case "'":
+            current_doctype_token(system_id = '')##
+            switch_to_state(doctype_system_id_single_quoted)
+        case 'EOF':
+            current_doctype_token(force_quirks_flag=True)##
+            emit_token(current_doctype)
+            emit_token(EOF)
+        case _:
+            current_doctype_token(force_quirks_flag=True)
+            reconsume(bogus_doctype)
+##############13.2.5.61
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+def _state(codepoint):
+    consume_next_input_char()
+    match codepoint:
+        case '':
+            switch_to_state()
+        case _:
+            switch_to_state()
+
+
+
+
+
+
+
+
+
+################################################################
+def character_reference_state(codepoint):
+    match codepoint:
+        case _:
+            switch_to_state()
+
+
+
+def state_matcher(state, codepoint):
+    match state:
+        case 'Data':
+                data_state(codepoint)
+        case 'CharacterReference':
+                character_reference_state(codepoint)
+
